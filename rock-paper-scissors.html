@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rock Paper Scissors</title>
+  <style>
+    body {
+      font-family: monospace;
+      max-width: 400px;
+      margin: 60px auto;
+      text-align: center;
+      background: #f5f5f5;
+      color: #222;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    .score { font-size: 1rem; margin-bottom: 24px; color: #555; }
+    .buttons { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+    button {
+      font-size: 2rem;
+      padding: 12px 20px;
+      border: 2px solid #222;
+      background: white;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.1s;
+    }
+    button:hover { background: #e0e0e0; }
+    .result {
+      font-size: 1.1rem;
+      min-height: 80px;
+      background: white;
+      border: 2px solid #222;
+      border-radius: 8px;
+      padding: 16px;
+      line-height: 1.8;
+    }
+    .win { color: green; font-weight: bold; }
+    .lose { color: red; font-weight: bold; }
+    .draw { color: #888; font-weight: bold; }
+    .reset { margin-top: 16px; font-size: 0.85rem; background: none; border: 1px solid #aaa; padding: 6px 14px; cursor: pointer; border-radius: 4px; }
+    .reset:hover { background: #eee; }
+    .countdown {
+      font-size: 2.5rem;
+      font-weight: bold;
+      min-height: 60px;
+      margin-bottom: 8px;
+      transition: transform 0.1s;
+    }
+    .countdown.pulse {
+      animation: pulse 0.2s ease-out;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.6); color: #e00; }
+      100% { transform: scale(1); }
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>Rock Paper Scissors</h1>
+  <div class="score" id="score">Wins: 0 | Losses: 0 | Draws: 0</div>
+  <div class="countdown" id="countdown"></div>
+  <div class="buttons">
+    <button onclick="play('rock')" id="btn-rock" title="Rock">🪨</button>
+    <button onclick="play('paper')" id="btn-paper" title="Paper">📄</button>
+    <button onclick="play('scissors')" id="btn-scissors" title="Scissors">✂️</button>
+  </div>
+  <div class="result" id="result">Pick rock, paper, or scissors to start!</div>
+  <button class="reset" onclick="reset()">Reset Score</button>
+
+  <script>
+    const choices = ['rock', 'paper', 'scissors'];
+    const emoji = { rock: '🪨', paper: '📄', scissors: '✂️' };
+    let wins = 0, losses = 0, draws = 0;
+
+    function beep(freq, duration) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    }
+
+    function pulse(text) {
+      const el = document.getElementById('countdown');
+      el.textContent = text;
+      el.classList.remove('pulse');
+      void el.offsetWidth; // reflow to restart animation
+      el.classList.add('pulse');
+    }
+
+    function setButtons(disabled) {
+      ['rock','paper','scissors'].forEach(c => {
+        document.getElementById('btn-' + c).disabled = disabled;
+      });
+    }
+
+    function play(player) {
+      setButtons(true);
+      document.getElementById('result').textContent = '';
+
+      const steps = [
+        { text: 'Rock...', freq: 440 },
+        { text: 'Paper...', freq: 440 },
+        { text: 'Scissors...', freq: 523 },
+      ];
+
+      // Timing: beat at 0ms, 700ms, 1400ms, result at 2100ms
+      steps.forEach((step, i) => {
+        setTimeout(() => {
+          beep(step.freq, 0.15);
+          pulse(step.text);
+        }, i * 700);
+      });
+
+      setTimeout(() => {
+        const computer = choices[Math.floor(Math.random() * 3)];
+        let outcome, cls;
+
+        if (player === computer) {
+          outcome = "It's a draw!"; cls = 'draw'; draws++;
+        } else if (
+          (player === 'rock' && computer === 'scissors') ||
+          (player === 'paper' && computer === 'rock') ||
+          (player === 'scissors' && computer === 'paper')
+        ) {
+          outcome = 'You win!'; cls = 'win'; wins++;
+        } else {
+          outcome = 'You lose!'; cls = 'lose'; losses++;
+        }
+
+        beep(660, 0.25);
+        pulse('Shoot! 💥');
+
+        setTimeout(() => {
+          document.getElementById('countdown').textContent = '';
+          document.getElementById('result').innerHTML =
+            `You: ${emoji[player]}  vs  Computer: ${emoji[computer]}<br>
+            <span class="${cls}">${outcome}</span>`;
+          document.getElementById('score').textContent =
+            `Wins: ${wins} | Losses: ${losses} | Draws: ${draws}`;
+          setButtons(false);
+        }, 400);
+
+      }, 2100);
+    }
+
+    function reset() {
+      wins = 0; losses = 0; draws = 0;
+      document.getElementById('score').textContent = 'Wins: 0 | Losses: 0 | Draws: 0';
+      document.getElementById('result').textContent = 'Pick rock, paper, or scissors to start!';
+      document.getElementById('countdown').textContent = '';
+    }
+  </script>
+</body>
+</html>
